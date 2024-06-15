@@ -40,7 +40,7 @@ struct CS_LOGIN_PACKET {
 };
 
 struct CS_MOVE_PACKET {
-	unsigned short size;	
+	unsigned short size;
 	char	type;
 	char	direction;  // 0 : UP, 1 : DOWN, 2 : LEFT, 3 : RIGHT
 	unsigned	move_time;

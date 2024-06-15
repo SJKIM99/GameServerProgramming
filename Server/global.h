@@ -48,14 +48,10 @@ class sector;
 class SESSION;
 class OVER_EXP;
 
-enum COMP_TYPE { OP_ACCEPT, OP_RECV, OP_SEND, OP_NPC_MOVE, OP_AI_HELLO, OP_AI_BYE, OP_NPC_ATTACK, OP_HEAL, OP_PLAYER_RESPAWN, OP_SAVE_PLAYER_INFO, OP_NPC_RESPAWN };
+enum COMP_TYPE { OP_ACCEPT, OP_RECV, OP_SEND, OP_NPC_MOVE, OP_AI_HELLO, OP_AI_BYE, OP_NPC_ATTACK, OP_HEAL, OP_PLAYER_RESPAWN, OP_SAVE_PLAYER_INFO, OP_GET_PLAYER_INFO, OP_ADD_PAYER_INFO, OP_NPC_RESPAWN };
 enum S_STATE { ST_FREE, ST_ALLOC, ST_INGAME };
 enum EVENT_TYPE { EV_RANDOM_MOVE, EV_BYE, EV_NPC_ATTACK, EV_HEAL, EV_PLAYER_RESPAWN, EV_NPC_RESPAWN };
 
-struct PlayerInfo {
-	int x;
-	int y;
-};
 struct TIMER_EVENT {
 	int object_id;
 	chrono::system_clock::time_point wakeup_time;
@@ -67,12 +63,19 @@ struct TIMER_EVENT {
 	}
 };
 
-enum DB_EVENT_TYPE { EV_GET_PLAYER_INFO, EV_SAVE_PLAYER_INFO };
+enum DB_EVENT_TYPE { EV_LOGIN_PLAYER, EV_SAVE_PLAYER_INFO };
+
+struct DB_PLAYER_INFO {
+	char nickname[NAMESIZE];
+	int x;
+	int y;
+};
 
 struct DB_EVENT {
 	int player_id;
 	std::chrono::system_clock::time_point wakeup_time;
 	DB_EVENT_TYPE event;
+	DB_PLAYER_INFO player_info;
 	constexpr bool operator < (const DB_EVENT& L) const
 	{
 		return (wakeup_time > L.wakeup_time);

@@ -97,71 +97,171 @@ bool DBDisConnect()
 	return true;
 }
 
-bool IsPlayerRegistered(std::string NICKNAME)
+bool IsPlayerRegistered(string nickname)
 {
 	SQLCHAR isRegistered{};
 	SQLLEN cb_isRegistered{};
+
+	//clients[player_id].db_lock.lock();
 	
 	std::wstring sqlQuery = L"EXEC isPlayerRegistered ?";
 	m_retcode = SQLPrepare(m_hstmt, (SQLWCHAR*)sqlQuery.c_str(), SQL_NTS);
-	m_retcode = SQLBindParameter(m_hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, NAMESIZE, 0, (SQLPOINTER)NICKNAME.c_str(), 0, NULL);
-	m_retcode = SQLExecute(m_hstmt);
-	if (m_retcode == -1)show_error(m_hstmt, SQL_HANDLE_STMT, m_retcode);
-	if (m_retcode == SQL_SUCCESS || m_retcode == SQL_SUCCESS_WITH_INFO) {
-		m_retcode = SQLBindCol(m_hstmt, 1, SQL_BIT, &isRegistered, sizeof(isRegistered), &cb_isRegistered);
+	if (m_retcode != SQL_SUCCESS && m_retcode != SQL_SUCCESS_WITH_INFO) {
+		show_error(m_hstmt, SQL_HANDLE_STMT, m_retcode);
+		//clients[player_id].db_lock.unlock();
+		return false;
 	}
-	
-	m_retcode = SQLFetch(m_hstmt);
 
+	m_retcode = SQLBindParameter(m_hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, NAMESIZE, 0, (SQLPOINTER)nickname.c_str(), 0, NULL);
+	if (m_retcode != SQL_SUCCESS && m_retcode != SQL_SUCCESS_WITH_INFO) {
+		show_error(m_hstmt, SQL_HANDLE_STMT, m_retcode);
+		//clients[player_id].db_lock.unlock();
+		return false;
+	}
+
+	m_retcode = SQLExecute(m_hstmt);
+	if (m_retcode == -1) {
+		show_error(m_hstmt, SQL_HANDLE_STMT, m_retcode);
+		//clients[player_id].db_lock.unlock();
+		return false;
+	}
+
+	if (m_retcode != SQL_SUCCESS && m_retcode != SQL_SUCCESS_WITH_INFO) {
+		// Additional error handling if needed
+		//clients[player_id].db_lock.unlock();
+		return false;
+	}
+
+	m_retcode = SQLBindCol(m_hstmt, 1, SQL_BIT, &isRegistered, sizeof(isRegistered), &cb_isRegistered);
+	if (m_retcode != SQL_SUCCESS && m_retcode != SQL_SUCCESS_WITH_INFO) {
+		show_error(m_hstmt, SQL_HANDLE_STMT, m_retcode);
+		//clients[player_id].db_lock.unlock();
+		return false;
+	}
+
+	m_retcode = SQLFetch(m_hstmt);
 	if (m_retcode == SQL_SUCCESS || m_retcode == SQL_SUCCESS_WITH_INFO) {
-		SQLFreeStmt(m_hstmt, SQL_RESET_PARAMS);  // 매개변수 재설정
-		SQLCloseCursor(m_hstmt);  // 문장과 연결된 커서 닫기
+		SQLFreeStmt(m_hstmt, SQL_RESET_PARAMS);
+		SQLCloseCursor(m_hstmt);
+		//clients[player_id].db_lock.unlock();
 		return (isRegistered == 1);
 	}
 	else {
+		show_error(m_hstmt, SQL_HANDLE_STMT, m_retcode);
+		//clients[player_id].db_lock.unlock();
 		return false;
 	}
 }
 
-PlayerInfo ExtractPlayerInfo(string NICKNAME)
+DB_PLAYER_INFO ExtractPlayerInfo(string NICKNAME)
 {
-	PlayerInfo playerinfo;
+	DB_PLAYER_INFO playerinfo{};
 
 	SQLINTEGER player_x{}, player_y{};
 	SQLLEN cb_x{}, cb_y{};
 
+	//clients[player_id].db_lock.lock();
 	std::wstring sqlQuery = L"EXEC ExtractPlayerInfo ?";
 	m_retcode = SQLPrepare(m_hstmt, (SQLWCHAR*)sqlQuery.c_str(), SQL_NTS);
+	if (m_retcode != SQL_SUCCESS && m_retcode != SQL_SUCCESS_WITH_INFO) {
+		show_error(m_hstmt, SQL_HANDLE_STMT, m_retcode);
+		//clients[player_id].db_lock.unlock();
+	}
+
 	m_retcode = SQLBindParameter(m_hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 20, 0, (SQLPOINTER)NICKNAME.c_str(), 0, NULL);
+	if (m_retcode != SQL_SUCCESS && m_retcode != SQL_SUCCESS_WITH_INFO) {
+		show_error(m_hstmt, SQL_HANDLE_STMT, m_retcode);
+		//clients[player_id].db_lock.unlock();
+	}
+
 	m_retcode = SQLExecute(m_hstmt);
-	// Bind columns 1
-	m_retcode = SQLBindCol(m_hstmt, 1, SQL_INTEGER, &player_x, NAMESIZE, &cb_x);
-	m_retcode = SQLBindCol(m_hstmt, 2, SQL_INTEGER, &player_y, NAMESIZE, &cb_y);
+	if (m_retcode == -1) {
+		show_error(m_hstmt, SQL_HANDLE_STMT, m_retcode);
+		//clients[player_id].db_lock.unlock();
+	}
+
+	if (m_retcode != SQL_SUCCESS && m_retcode != SQL_SUCCESS_WITH_INFO) {
+		// Additional error handling if needed
+		//clients[player_id].db_lock.unlock();
+	}
+
+	m_retcode = SQLBindCol(m_hstmt, 1, SQL_INTEGER, &player_x, sizeof(player_x), &cb_x);
+	if (m_retcode != SQL_SUCCESS && m_retcode != SQL_SUCCESS_WITH_INFO) {
+		show_error(m_hstmt, SQL_HANDLE_STMT, m_retcode);
+		//clients[player_id].db_lock.unlock();
+	}
+
+	m_retcode = SQLBindCol(m_hstmt, 2, SQL_INTEGER, &player_y, sizeof(player_y), &cb_y);
+	if (m_retcode != SQL_SUCCESS && m_retcode != SQL_SUCCESS_WITH_INFO) {
+		show_error(m_hstmt, SQL_HANDLE_STMT, m_retcode);
+		//clients[player_id].db_lock.unlock();
+	}
 
 	m_retcode = SQLFetch(m_hstmt);
-
 	if (m_retcode == SQL_SUCCESS || m_retcode == SQL_SUCCESS_WITH_INFO) {
 		SQLFreeStmt(m_hstmt, SQL_RESET_PARAMS);  // 매개변수 재설정
 		SQLCloseCursor(m_hstmt);  // 문장과 연결된 커서 닫기
+		strcpy_s(playerinfo.nickname, sizeof(playerinfo.nickname), NICKNAME.c_str());
 		playerinfo.x = player_x;
 		playerinfo.y = player_y;
+		//clients[player_id].db_lock.unlock();
 		return playerinfo;
 	}
 }
 
-void SavePlayerInfo(SESSION& player)
+void SavePlayerInfo(string name, int x, int y)
 {
-	SQLINTEGER player_x = player.x;
-	SQLINTEGER player_y = player.y;
-	string nickname = player.name;
+	//player.db_lock.lock();
+	SQLINTEGER player_x = x;
+	SQLINTEGER player_y = y;
 
 	std::wstring sqlQuery = L"EXEC SavePlayerInfo ?, ?, ?";
 	m_retcode = SQLPrepare(m_hstmt, (SQLWCHAR*)sqlQuery.c_str(), SQL_NTS);
+	if (m_retcode != SQL_SUCCESS && m_retcode != SQL_SUCCESS_WITH_INFO) {
+		show_error(m_hstmt, SQL_HANDLE_STMT, m_retcode);
+		return;
+	}
 
 	// Bind parameters
-	m_retcode = SQLBindParameter(m_hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, NAMESIZE, 0, (SQLPOINTER)nickname.c_str(), 0, NULL);
+	m_retcode = SQLBindParameter(m_hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, NAMESIZE, 0, (SQLPOINTER)name.c_str(), 0, NULL);
+	if (m_retcode != SQL_SUCCESS && m_retcode != SQL_SUCCESS_WITH_INFO) {
+		show_error(m_hstmt, SQL_HANDLE_STMT, m_retcode);
+		return;
+	}
+
 	m_retcode = SQLBindParameter(m_hstmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &player_x, 0, NULL);
+	if (m_retcode != SQL_SUCCESS && m_retcode != SQL_SUCCESS_WITH_INFO) {
+		show_error(m_hstmt, SQL_HANDLE_STMT, m_retcode);
+		return;
+	}
+
 	m_retcode = SQLBindParameter(m_hstmt, 3, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &player_y, 0, NULL);
+	if (m_retcode != SQL_SUCCESS && m_retcode != SQL_SUCCESS_WITH_INFO) {
+		show_error(m_hstmt, SQL_HANDLE_STMT, m_retcode);
+		return;
+	}
+
+	m_retcode = SQLExecute(m_hstmt);
+	if (m_retcode == SQL_SUCCESS || m_retcode == SQL_SUCCESS_WITH_INFO) {
+		SQLFreeStmt(m_hstmt, SQL_CLOSE);
+		SQLFreeStmt(m_hstmt, SQL_UNBIND);
+		SQLFreeStmt(m_hstmt, SQL_RESET_PARAMS);
+		SQLCloseCursor(m_hstmt);
+		//player.db_lock.unlock();
+	}
+	else {
+		show_error(m_hstmt, SQL_HANDLE_STMT, m_retcode);
+	}
+}
+
+void AddPlayerInDataBase(string nickname, int x, int y)
+{
+	std::wstring sqlQuery = L"EXEC AddNewPlayer ?, ?, ?";
+	m_retcode = SQLPrepare(m_hstmt, (SQLWCHAR*)sqlQuery.c_str(), SQL_NTS);
+
+	m_retcode = SQLBindParameter(m_hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, NAMESIZE, 0, (SQLPOINTER)nickname.c_str(), 0, NULL);
+	m_retcode = SQLBindParameter(m_hstmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &x, 0, NULL);
+	m_retcode = SQLBindParameter(m_hstmt, 3, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &y, 0, NULL);
 
 	m_retcode = SQLExecute(m_hstmt);
 	if (m_retcode == SQL_SUCCESS || m_retcode == SQL_SUCCESS_WITH_INFO) {
@@ -177,58 +277,13 @@ void process_packet(int c_id, char* packet)
 	switch (packet[2]) {
 	case CS_LOGIN: {
 		CS_LOGIN_PACKET* p = reinterpret_cast<CS_LOGIN_PACKET*>(packet);
-		PlayerInfo login_player{};
+		DB_PLAYER_INFO login_player;
+		strcpy_s(login_player.nickname, p->name);
+		login_player.x = -1;
+		login_player.y = -1;
 
-		if (IsPlayerRegistered(p->name)) {	//로그인 정보가 있다면? -> 꺼내오기
-			login_player = ExtractPlayerInfo(p->name);
-			{
-				lock_guard<mutex> ll{ clients[c_id].s_lock };
-				strcpy_s(clients[c_id].name, p->name);
-				clients[c_id].x = login_player.x;
-				clients[c_id].y = login_player.y;
-				clients[c_id].state = ST_INGAME;
-				clients[c_id].prev_my_sector_x = sectors.GetMySector_X(clients[c_id].x);
-				clients[c_id].prev_my_sector_y = sectors.GetMySector_Y(clients[c_id].y);
-				clients[c_id].now_my_sector_x = sectors.GetMySector_X(clients[c_id].x);
-				clients[c_id].now_my_sector_y = sectors.GetMySector_Y(clients[c_id].y);
-				clients[c_id].max_hp = MAX_HP;
-				clients[c_id].hp = MAX_HP / 2;
-		
-				sectors.AddPlayerInSector(c_id, sectors.GetMySector_X(clients[c_id].x), sectors.GetMySector_Y(clients[c_id].y));
-			}
-		}
-		else {														//없다면 새로 만들어주기
-			strcpy_s(clients[c_id].name, p->name);
-			{
-				lock_guard<mutex> ll{ clients[c_id].s_lock };
-				clients[c_id].x = rand() % W_WIDTH;
-				clients[c_id].y = rand() % W_HEIGHT;
-				clients[c_id].state = ST_INGAME;
-				clients[c_id].prev_my_sector_x = sectors.GetMySector_X(clients[c_id].x);
-				clients[c_id].prev_my_sector_y = sectors.GetMySector_Y(clients[c_id].y);
-				clients[c_id].now_my_sector_x = sectors.GetMySector_X(clients[c_id].x);
-				clients[c_id].now_my_sector_y = sectors.GetMySector_Y(clients[c_id].y);
-				clients[c_id].max_hp = MAX_HP;
-
-				sectors.AddPlayerInSector(c_id, sectors.GetMySector_X(clients[c_id].x), sectors.GetMySector_Y(clients[c_id].y));
-			}
-		}
-		clients[c_id].send_login_info_packet();
-		for (auto& pl : clients) {
-			{
-				lock_guard<mutex> ll(pl.s_lock);
-				if (ST_INGAME != pl.state) continue;
-			}
-			if (pl.id == c_id) continue;
-			if (false == can_see(c_id, pl.id))
-				continue;
-			if (is_pc(pl.id)) pl.send_add_player_packet(c_id);
-			else WakeupNPC(pl.id, c_id);
-			clients[c_id].send_add_player_packet(pl.id);
-		}
-		//로그인시 체력회복 timer on
-		TIMER_EVENT event{ c_id, chrono::system_clock::now() + 5s, EV_HEAL, 0 };
-		timer_queue.push(event);
+		DB_EVENT player_login_event{ c_id,chrono::system_clock::now(), EV_LOGIN_PLAYER, login_player };
+		m_database_queue.push(player_login_event);
 	}
 		break;
 	case CS_MOVE: {
@@ -287,7 +342,13 @@ void process_packet(int c_id, char* packet)
 			clients[c_id].send_move_packet(c_id);
 
 			//DB에 좌표 업데이트
-			DB_EVENT player_update_event{ c_id,chrono::system_clock::now(), EV_SAVE_PLAYER_INFO };
+
+			DB_PLAYER_INFO save_player_info;
+			strcpy_s(save_player_info.nickname,clients[c_id].name);
+			save_player_info.x = clients[c_id].x;
+			save_player_info.y = clients[c_id].y;
+
+			DB_EVENT player_update_event{ c_id,chrono::system_clock::now(), EV_SAVE_PLAYER_INFO,save_player_info };
 			m_database_queue.push(player_update_event);
 
 			unordered_set<int> near_list;
@@ -475,6 +536,78 @@ void worker_thread(HANDLE h_iocp)
 			delete ex_over;
 		}
 					break;
+		case OP_GET_PLAYER_INFO: {
+			{
+				lock_guard<mutex> ll{ clients[key].s_lock };
+				strcpy_s(clients[key].name, ex_over->playerinfo.nickname);
+				clients[key].x = ex_over->playerinfo.x;
+				clients[key].y = ex_over->playerinfo.y;
+				clients[key].state = ST_INGAME;
+				clients[key].prev_my_sector_x = sectors.GetMySector_X(clients[key].x);
+				clients[key].prev_my_sector_y = sectors.GetMySector_Y(clients[key].y);
+				clients[key].now_my_sector_x = sectors.GetMySector_X(clients[key].x);
+				clients[key].now_my_sector_y = sectors.GetMySector_Y(clients[key].y);
+				clients[key].max_hp = MAX_HP;
+				clients[key].hp = MAX_HP / 2;
+
+				sectors.AddPlayerInSector(key, sectors.GetMySector_X(clients[key].x), sectors.GetMySector_Y(clients[key].y));
+			}
+			clients[key].send_login_info_packet();
+			for (auto& pl : clients) {
+				{
+					lock_guard<mutex> ll(pl.s_lock);
+					if (ST_INGAME != pl.state) continue;
+				}
+				if (pl.id == key) continue;
+				if (false == can_see(key, pl.id))
+					continue;
+				if (is_pc(pl.id)) pl.send_add_player_packet(key);
+				else WakeupNPC(pl.id, key);
+				clients[key].send_add_player_packet(pl.id);
+			}
+			//로그인시 체력회복 timer on
+			TIMER_EVENT event{ key, chrono::system_clock::now() + 5s, EV_HEAL, 0 };
+			timer_queue.push(event);
+		}
+							   break;
+		case OP_ADD_PAYER_INFO: {
+			{
+				lock_guard<mutex> ll{ clients[key].s_lock };
+				strcpy_s(clients[key].name, ex_over->playerinfo.nickname);
+				clients[key].x = rand() % W_WIDTH;
+				clients[key].y = rand() % W_HEIGHT;
+				clients[key].state = ST_INGAME;
+				clients[key].prev_my_sector_x = sectors.GetMySector_X(clients[key].x);
+				clients[key].prev_my_sector_y = sectors.GetMySector_Y(clients[key].y);
+				clients[key].now_my_sector_x = sectors.GetMySector_X(clients[key].x);
+				clients[key].now_my_sector_y = sectors.GetMySector_Y(clients[key].y);
+				clients[key].max_hp = MAX_HP;
+
+				sectors.AddPlayerInSector(key, sectors.GetMySector_X(clients[key].x), sectors.GetMySector_Y(clients[key].y));
+			}
+
+			clients[key].db_lock.lock();
+			AddPlayerInDataBase(clients[key].name, clients[key].x, clients[key].y);
+			clients[key].db_lock.unlock();
+
+			clients[key].send_login_info_packet();
+			for (auto& pl : clients) {
+				{
+					lock_guard<mutex> ll(pl.s_lock);
+					if (ST_INGAME != pl.state) continue;
+				}
+				if (pl.id == key) continue;
+				if (false == can_see(key, pl.id))
+					continue;
+				if (is_pc(pl.id)) pl.send_add_player_packet(key);
+				else WakeupNPC(pl.id, key);
+				clients[key].send_add_player_packet(pl.id);
+			}
+			//로그인시 체력회복 timer on
+			TIMER_EVENT event{ key, chrono::system_clock::now() + 5s, EV_HEAL, 0 };
+			timer_queue.push(event);
+		}
+							  break;
 		case OP_NPC_MOVE: {
 			if (clients[key].can_attack == false) {
 				bool keep_alive = false;
@@ -644,7 +777,7 @@ void do_timer()
 void do_database()
 {
 	while (true) {
-		DB_EVENT ev{};
+		DB_EVENT ev;
 		auto current_time = std::chrono::system_clock::now();
 		if (true == m_database_queue.try_pop(ev)) {
 			if (ev.wakeup_time > current_time) {
@@ -652,16 +785,28 @@ void do_database()
 				this_thread::sleep_for(1ms);
 				continue;
 			}
-		}
-		switch (ev.event) {
-		case EV_GET_PLAYER_INFO: {
-
-		}
-							   break;
-		case EV_SAVE_PLAYER_INFO: {
-			SavePlayerInfo(clients[ev.player_id]);
-		}
+			switch (ev.event) {
+			case EV_LOGIN_PLAYER: {
+				if (IsPlayerRegistered(ev.player_info.nickname)) {
+					//정보가 있다면?
+					OVER_EXP* ov = new OVER_EXP;
+					ov->comp_type = OP_GET_PLAYER_INFO;
+					ov->playerinfo = ExtractPlayerInfo(ev.player_info.nickname);
+					PostQueuedCompletionStatus(h_iocp, 1, ev.player_id, &ov->over);
+				}
+				else {
+					OVER_EXP* ov = new OVER_EXP;
+					ov->comp_type = OP_ADD_PAYER_INFO;
+					ov->playerinfo = ev.player_info;
+					PostQueuedCompletionStatus(h_iocp, 1, ev.player_id, &ov->over);
+				}
+			}
 								break;
+			case EV_SAVE_PLAYER_INFO: {
+				SavePlayerInfo(ev.player_info.nickname, ev.player_info.x, ev.player_info.y);
+			}
+									break;
+			}
 		}
 		this_thread::sleep_for(1ms);
 	}

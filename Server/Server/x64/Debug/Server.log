@@ -1,6 +1,0 @@
-﻿  main.cpp
-C:\Users\user\Desktop\겜서버텀프\Server\main.cpp(576,21): warning C4838: 'ULONG_PTR'에서 'int'(으)로의 변환에는 축소 변환이 필요합니다.
-C:\Users\user\Desktop\겜서버텀프\Server\main.cpp(576,21): warning C4244: '초기화 중': 'ULONG_PTR'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\Desktop\겜서버텀프\Server\main.cpp(173): warning C4715: 'DataBase::IsPlayerRegistered': 모든 제어 경로에서 값을 반환하지는 않습니다.
-C:\Users\user\Desktop\겜서버텀프\Server\main.cpp(202): warning C4715: 'DataBase::ExtractPlayerInfo': 모든 제어 경로에서 값을 반환하지는 않습니다.
-  Server.vcxproj -> C:\Users\user\Desktop\겜서버텀프\Server\x64\Debug\Server.exe

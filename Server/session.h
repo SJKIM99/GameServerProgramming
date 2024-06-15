@@ -9,6 +9,7 @@ public:
 	WSABUF wsabuf;
 	char send_buf[BUF_SIZE];
 	COMP_TYPE comp_type;
+	DB_PLAYER_INFO playerinfo;
 	int ai_target_obj;
 
 	OVER_EXP()
@@ -67,6 +68,7 @@ public:
 	mutex timer_lock;
 	mutex npc_die_lock;
 	mutex npc_attack_lock;
+	mutex db_lock;
 public:
 	SESSION()
 	{

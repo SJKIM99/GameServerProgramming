@@ -27,7 +27,7 @@ const static int MAX_BUFF_SIZE = 255;
 
 #pragma comment (lib, "ws2_32.lib")
 
-#include "C:\Users\user\Desktop\╟в╪╜╧Жерга\Server/protocol.h"
+#include "C:\Users\user\Desktop\╟в╪╜╧Жерга\GameServerProgramming\Server/protocol.h"
 
 HANDLE g_hiocp;
 
